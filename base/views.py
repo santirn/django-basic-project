@@ -69,9 +69,9 @@ def home(request):
     room_count = rooms.count()
     room_messages = Message.objects.filter(
         Q(room__topic__name__icontains=q)
-    )
+    )[:8]
 
-    topics = Topic.objects.all()
+    topics = Topic.objects.all()[:5]
 
     context = {'rooms': rooms,
                'topics': topics,
@@ -86,6 +86,9 @@ def room(request, pk):
     participants = room.participants.all()
 
     if request.method == "POST":
+        if not request.user.is_authenticated:
+            return redirect('login')
+
         message = Message.objects.create(
             user=request.user,
             room=room,
@@ -106,10 +109,13 @@ def userProfile(request, pk):
     rooms = user.room_set.all()
     room_messages = user.message_set.all()
     topics = Topic.objects.all()
+    room_count = topics.count()
+
     context = {'user': user,
                'rooms': rooms,
                'topics': topics,
                'room_messages': room_messages,
+               'room_count': room_count
                }
 
     return render(request, 'base/profile.html', context)
@@ -216,3 +222,21 @@ def updateUser(request, pk):
 
     context = {'form': form}
     return render(request, 'base/update_user.html', context)
+
+
+def topicsPage(request):
+    q = request.GET.get('q') if request.GET.get('q') != None else ""
+    topics_count = Topic.objects.all().count()
+    topics = Topic.objects.filter(name__icontains=q)
+
+    context = {'topics': topics,
+               'topics_count': topics_count,
+               }
+    return render(request, 'base/topics.html', context)
+
+
+def activityPage(request):
+    room_messages = Message.objects.all()[:5]
+
+    context = {'room_messages': room_messages}
+    return render(request, 'base/activity.html', context)
